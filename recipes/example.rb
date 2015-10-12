@@ -2,9 +2,19 @@
 # This should serve as a simple guide of how to use the resource to set up nginx.
 # See more in the README.md and in test/fixtures/cookbooks for more examples.
 
-nginx_service 'example'
+user = node['platform'] == 'centos' && node['platform_version'].to_i == 7 ? 'nginx' : 'www-data'
 
-file '/tmp/index.htm' do
+nginx_service 'example' do
+  run_user user
+end
+
+site_root = '/example-site'
+
+directory site_root do
+  owner user
+end
+
+file "#{site_root}/index.htm" do
   content <<-EOF.gsub(/^ {4}/, '')
     <html>
     <body>
@@ -12,6 +22,7 @@ file '/tmp/index.htm' do
     </body>
     </html
   EOF
+  owner user
 end
 
 # @todo convert this to a proper nginx_config resource
@@ -21,7 +32,7 @@ file '/etc/nginx-example/sites-enabled/default' do
       listen 80 default_server;
       listen [::]:80 default_server ipv6only=on;
 
-      root /tmp;
+      root #{site_root};
       index index.html index.htm;
 
       # Make site accessible from http://localhost/
